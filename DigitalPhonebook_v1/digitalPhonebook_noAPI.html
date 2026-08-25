@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+    <title>Phonebook · Google Sheets</title>
+    <style>
+        /* ----- RESET & BASE (utilitarian, XP-inspired, minimal rounding) ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+        }
+        body {
+            background: #3a6ea5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px;
+        }
+        .phonebook {
+            max-width: 1000px;
+            width: 100%;
+            background: #d4d0c8;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            box-shadow: 4px 4px 0 #1e3a5f, 8px 8px 12px rgba(0,0,0,0.5);
+            padding: 16px 18px 20px;
+            transition: all 0.1s ease;
+        }
+        .app-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #0a2a4a;
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            gap: 10px;
+        }
+        .app-header .title-area {
+            flex: 1;
+            min-width: 150px;
+            max-width: 100%;
+        }
+        .app-header .title-area img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 60px;
+            object-fit: contain;
+            image-rendering: auto;
+            background: transparent;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn {
+            background: #ece9d8;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            padding: 6px 14px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #1e2b3a;
+            cursor: pointer;
+            box-shadow: 1px 1px 0 #0a2a4a;
+            transition: all 0.05s linear;
+            min-height: 40px;
+            background: #d4d0c8;
+        }
+        .btn:active {
+            border-color: #0a2a4a;
+            border-right-color: #0a2a4a;
+            border-bottom-color: #0a2a4a;
+            box-shadow: inset 1px 1px 0 #0a2a4a;
+            transform: translate(1px, 1px);
+        }
+        .btn-primary {
+            background: #b8d4e3;
+            border-color: #1e4a6b;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            color: #0a1f30;
+        }
+        .btn-edit {
+            background: #f7d7a8;
+            border-color: #8b6a3c;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+        }
+        .btn-danger {
+            background: #e6b3b3;
+            border-color: #7a2e2e;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+        }
+        .btn-exit {
+            background: #b0b0b0;
+            border-color: #3a3a3a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+        }
+        .btn-save {
+            background: #b0d0b0;
+            border-color: #2a5a2a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+        }
+        .btn-google {
+            background: #ffffff;
+            border-color: #4285f4;
+            color: #4285f4;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+        }
+        .search-area {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .search-area input {
+            flex: 1;
+            min-width: 160px;
+            padding: 8px 10px;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            background: #f5f3ed;
+            font-size: 1rem;
+            height: 40px;
+            box-shadow: inset 1px 1px 0 #0a2a4a;
+        }
+        .search-area input:focus {
+            background: #fff;
+            outline: none;
+            border-color: #1e4a6b;
+        }
+        .entries-container {
+            background: #f5f3ed;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            max-height: 480px;
+            overflow-y: auto;
+            padding: 6px 4px;
+        }
+        .entry-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #b8b4a8;
+            font-size: 1rem;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .entry-item:last-child {
+            border-bottom: none;
+        }
+        .entry-office {
+            font-weight: 600;
+            color: #0a1f30;
+            min-width: 100px;
+        }
+        .entry-local {
+            color: #1f3a4b;
+            font-weight: 500;
+        }
+        .entry-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .entry-actions .btn {
+            padding: 2px 10px;
+            font-size: 0.8rem;
+            min-height: 30px;
+            background: #d4d0c8;
+        }
+        .entry-edit-input {
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            padding: 4px 8px;
+            background: #fff;
+            font-size: 0.95rem;
+            width: 140px;
+            box-shadow: inset 1px 1px 0 #0a2a4a;
+        }
+        .entry-edit-input:focus {
+            background: #fafffa;
+            outline: none;
+        }
+        .empty-msg {
+            padding: 20px;
+            text-align: center;
+            color: #3a4a5a;
+            font-weight: 500;
+        }
+        .edit-badge {
+            background: #c06030;
+            color: white;
+            padding: 4px 12px;
+            font-weight: 700;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.8rem;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .add-area {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            background: #c8c4b8;
+            padding: 12px 12px;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+        }
+        .add-area input {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 10px;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            background: #f5f3ed;
+            font-size: 0.95rem;
+            height: 40px;
+            box-shadow: inset 1px 1px 0 #0a2a4a;
+        }
+        .add-area input:focus {
+            background: #fff;
+            outline: none;
+        }
+        .save-area {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+        .status-bar {
+            margin-top: 16px;
+            padding: 8px 12px;
+            background: #c8c4b8;
+            border: 2px solid #0a2a4a;
+            border-right-color: #f0f0f0;
+            border-bottom-color: #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .status-text {
+            font-weight: 500;
+            color: #0a1f30;
+        }
+        .status-text.loading {
+            color: #c06030;
+        }
+        .status-text.success {
+            color: #1e6a1e;
+        }
+        .status-text.error {
+            color: #7a2e2e;
+        }
+        @media (max-width: 640px) {
+            .phonebook { padding: 12px; }
+            .app-header { flex-direction: column; align-items: stretch; gap: 8px; }
+            .header-actions { justify-content: stretch; }
+            .header-actions .btn { flex: 1; text-align: center; }
+            .entry-item { flex-direction: column; align-items: stretch; gap: 4px; }
+            .entry-actions { justify-content: flex-end; }
+            .add-area { flex-direction: column; align-items: stretch; }
+            .entry-edit-input { width: 100%; }
+            .app-header .title-area img {
+                max-height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="phonebook" id="app">
+        <div class="app-header">
+            <div class="title-area">
+                <!-- REPLACE THE SRC WITH YOUR IMAGE URL -->
+                <img src="https://via.placeholder.com/300x60/0a2a4a/ffffff?text=PHONEBOOK" alt="Phonebook Logo" />
+                <!-- Example with a real image: 
+                <img src="https://your-image-url.com/logo.png" alt="Phonebook Logo" /> 
+                -->
+            </div>
+            <div class="header-actions">
+                <span id="editModeBadge" class="edit-badge hidden">EDIT</span>
+                <button class="btn btn-edit" id="modifyBtn">MODIFY</button>
+                <button class="btn btn-exit hidden" id="exitEditBtn">EXIT</button>
+            </div>
+        </div>
+
+        <div class="search-area">
+            <input type="text" id="searchInput" placeholder="Search office or local..." />
+            <button class="btn" id="clearSearchBtn">Clear</button>
+        </div>
+
+        <div class="entries-container" id="entriesContainer">
+            <div class="empty-msg">Loading phonebook...</div>
+        </div>
+
+        <!-- Add new entry (only in edit mode) -->
+        <div class="add-area hidden" id="addArea">
+            <input type="text" id="newOffice" placeholder="Office name" />
+            <input type="text" id="newLocal" placeholder="Number" />
+            <button class="btn btn-primary" id="addBtn">ADD</button>
+        </div>
+
+        <!-- Save button (only in edit mode) -->
+        <div class="save-area hidden" id="saveArea">
+            <button class="btn btn-save" id="saveBtn">SAVE TO SHEETS</button>
+            <button class="btn btn-google" id="syncBtn">SYNC</button>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-text" id="statusText">Connecting...</span>
+            <span id="entryCount">0 entries loaded</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            "use strict";
+
+            // ================================================================
+            // GOOGLE SHEETS CONFIGURATION (HARDCODED)
+            // ================================================================
+            // Replace these values with your actual credentials
+            // ================================================================
+
+            const GOOGLE_SHEETS_CONFIG = {
+                // Your API Key from Google Cloud Console
+                apiKey: 'YOUR_GOOGLE_API_KEY_HERE',
+                
+                // Your Spreadsheet ID from the URL
+                spreadsheetId: '1zGvaKKwjt-S7ve_YW1B5a1YMCWof6d_KdNqR0kHt4dw',
+                
+                // Sheet name (default is "Sheet1")
+                sheetName: 'Sheet1',
+                
+                // Column mapping (A=Office, B=Local)
+                range: 'A:B'
+            };
+
+            // ================================================================
+            // END OF CONFIGURATION
+            // ================================================================
+
+            // ----- STATE -----
+            let phonebook = [];
+            let editMode = false;
+            let isConnected = false;
+            const ADMIN_PASSWORD = "VPAA2026";
+
+            // DOM refs
+            const container = document.getElementById('entriesContainer');
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            const modifyBtn = document.getElementById('modifyBtn');
+            const exitEditBtn = document.getElementById('exitEditBtn');
+            const editBadge = document.getElementById('editModeBadge');
+            const addArea = document.getElementById('addArea');
+            const saveArea = document.getElementById('saveArea');
+            const newOffice = document.getElementById('newOffice');
+            const newLocal = document.getElementById('newLocal');
+            const addBtn = document.getElementById('addBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const syncBtn = document.getElementById('syncBtn');
+            const statusText = document.getElementById('statusText');
+            const entryCount = document.getElementById('entryCount');
+
+            // ----- STATUS UPDATES -----
+            function setStatus(msg, type = 'info') {
+                statusText.textContent = msg;
+                statusText.className = 'status-text ' + type;
+            }
+
+            function updateEntryCount() {
+                entryCount.textContent = phonebook.length + ' entries loaded';
+            }
+
+            // ----- GOOGLE SHEETS API -----
+            async function readFromSheets() {
+                try {
+                    const { apiKey, spreadsheetId, sheetName, range } = GOOGLE_SHEETS_CONFIG;
+                    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId + '/values/' + sheetName + '!' + range + '?key=' + apiKey;
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error?.message || 'Failed to read sheet');
+                    }
+                    
+                    const data = await response.json();
+                    const values = data.values || [];
+                    
+                    // ALWAYS skip the first row (header)
+                    const entries = [];
+                    for (let i = 1; i < values.length; i++) {
+                        const row = values[i];
+                        if (row.length >= 2 && row[0] && row[1]) {
+                            entries.push({
+                                office: String(row[0]).trim(),
+                                local: String(row[1]).trim()
+                            });
+                        }
+                    }
+                    
+                    return entries;
+                } catch (error) {
+                    console.error('Read error:', error);
+                    throw error;
+                }
+            }
+
+            async function writeToSheets(entries) {
+                try {
+                    const { apiKey, spreadsheetId, sheetName } = GOOGLE_SHEETS_CONFIG;
+                    
+                    const values = [
+                        ['Office', 'Local']
+                    ];
+                    
+                    for (let entry of entries) {
+                        values.push([entry.office, entry.local]);
+                    }
+                    
+                    const range = sheetName + '!A1';
+                    const url = 'https://sheets.googleapis.com/v4/spreadsheets/' + spreadsheetId + '/values/' + range + '?key=' + apiKey + '&valueInputOption=RAW';
+                    
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            range: range,
+                            majorDimension: 'ROWS',
+                            values: values
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error?.message || 'Failed to write to sheet');
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Write error:', error);
+                    throw error;
+                }
+            }
+
+            // ----- LOAD FROM GOOGLE SHEETS -----
+            async function loadFromSheets() {
+                try {
+                    setStatus('Loading...', 'loading');
+                    const entries = await readFromSheets();
+                    
+                    if (entries.length === 0) {
+                        phonebook = [
+                            { office: 'Main Office', local: '101' },
+                            { office: 'HR Department', local: '202' },
+                            { office: 'IT Support', local: '303' },
+                            { office: 'Reception', local: '100' },
+                            { office: 'Sales Team', local: '404' },
+                            { office: 'Marketing', local: '505' }
+                        ];
+                        setStatus('Using sample data', 'info');
+                        await writeToSheets(phonebook);
+                    } else {
+                        phonebook = entries;
+                        setStatus('Ready', 'success');
+                    }
+                    
+                    isConnected = true;
+                    render();
+                    updateEntryCount();
+                    return true;
+                } catch (error) {
+                    setStatus('Error: ' + error.message, 'error');
+                    return false;
+                }
+            }
+
+            // ----- SAVE TO GOOGLE SHEETS -----
+            async function saveToSheets() {
+                if (!isConnected) {
+                    setStatus('Not connected', 'error');
+                    return;
+                }
+                
+                try {
+                    setStatus('Saving...', 'loading');
+                    await writeToSheets(phonebook);
+                    setStatus('Saved', 'success');
+                } catch (error) {
+                    setStatus('Save error: ' + error.message, 'error');
+                }
+            }
+
+            // ----- RENDER (with search filter) -----
+            function render() {
+                const query = searchInput.value.trim().toLowerCase();
+                let filtered = phonebook;
+                if (query !== '') {
+                    filtered = phonebook.filter(function(entry) {
+                        return entry.office.toLowerCase().includes(query) ||
+                               entry.local.toLowerCase().includes(query);
+                    });
+                }
+
+                container.innerHTML = '';
+                if (filtered.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-msg';
+                    empty.textContent = (phonebook.length === 0) ?
+                        'No entries. Add entries in edit mode.' :
+                        'No results match your search.';
+                    container.appendChild(empty);
+                    updateEntryCount();
+                    return;
+                }
+
+                filtered.forEach(function(entry, idx) {
+                    const realIndex = phonebook.indexOf(entry);
+                    const div = document.createElement('div');
+                    div.className = 'entry-item';
+
+                    if (editMode) {
+                        const officeInput = document.createElement('input');
+                        officeInput.type = 'text';
+                        officeInput.className = 'entry-edit-input';
+                        officeInput.value = entry.office;
+                        officeInput.placeholder = 'Office';
+                        officeInput.setAttribute('data-index', realIndex);
+
+                        const localInput = document.createElement('input');
+                        localInput.type = 'text';
+                        localInput.className = 'entry-edit-input';
+                        localInput.value = entry.local;
+                        localInput.placeholder = 'Number';
+                        localInput.setAttribute('data-index', realIndex);
+
+                        const actions = document.createElement('span');
+                        actions.className = 'entry-actions';
+
+                        const updateBtn = document.createElement('button');
+                        updateBtn.className = 'btn btn-save';
+                        updateBtn.textContent = 'Update';
+                        updateBtn.setAttribute('data-index', realIndex);
+                        updateBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const idx = parseInt(this.getAttribute('data-index'), 10);
+                            if (isNaN(idx) || idx < 0 || idx >= phonebook.length) return;
+                            const officeVal = officeInput.value.trim();
+                            const localVal = localInput.value.trim();
+                            if (officeVal === '' || localVal === '') {
+                                alert('Office and Number cannot be empty.');
+                                return;
+                            }
+                            phonebook[idx].office = officeVal;
+                            phonebook[idx].local = localVal;
+                            render();
+                            setStatus('Updated', 'info');
+                        });
+
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'btn btn-danger';
+                        delBtn.textContent = 'Delete';
+                        delBtn.setAttribute('data-index', realIndex);
+                        delBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const idx = parseInt(this.getAttribute('data-index'), 10);
+                            if (!isNaN(idx) && idx >= 0 && idx < phonebook.length) {
+                                if (confirm('Delete "' + phonebook[idx].office + '" ?')) {
+                                    phonebook.splice(idx, 1);
+                                    render();
+                                    setStatus('Deleted', 'info');
+                                }
+                            }
+                        });
+
+                        actions.appendChild(updateBtn);
+                        actions.appendChild(delBtn);
+                        div.appendChild(officeInput);
+                        div.appendChild(localInput);
+                        div.appendChild(actions);
+                    } else {
+                        const infoSpan = document.createElement('span');
+                        infoSpan.innerHTML = '<span class="entry-office">' + escapeHtml(entry.office) + '</span>  —  <span class="entry-local">' + escapeHtml(entry.local) + '</span>';
+                        div.appendChild(infoSpan);
+                    }
+                    container.appendChild(div);
+                });
+                updateEntryCount();
+            }
+
+            function escapeHtml(text) {
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+            }
+
+            // ----- EDIT MODE UI -----
+            function updateEditUI() {
+                if (editMode) {
+                    editBadge.classList.remove('hidden');
+                    exitEditBtn.classList.remove('hidden');
+                    modifyBtn.textContent = 'EDIT';
+                    modifyBtn.disabled = true;
+                    modifyBtn.style.opacity = '0.7';
+                    addArea.classList.remove('hidden');
+                    saveArea.classList.remove('hidden');
+                } else {
+                    editBadge.classList.add('hidden');
+                    exitEditBtn.classList.add('hidden');
+                    modifyBtn.textContent = 'MODIFY';
+                    modifyBtn.disabled = false;
+                    modifyBtn.style.opacity = '1';
+                    addArea.classList.add('hidden');
+                    saveArea.classList.add('hidden');
+                }
+                render();
+            }
+
+            // ----- ENTER EDIT MODE (password) -----
+            function enterEditMode() {
+                if (editMode) return;
+                if (!isConnected) {
+                    setStatus('Please connect first', 'error');
+                    return;
+                }
+                const pwd = prompt('Enter admin password:');
+                if (pwd === null) return;
+                if (pwd === ADMIN_PASSWORD) {
+                    editMode = true;
+                    updateEditUI();
+                    setStatus('Edit mode active', 'info');
+                } else {
+                    alert('Incorrect password.');
+                }
+            }
+
+            // ----- EXIT EDIT MODE -----
+            function exitEditMode() {
+                if (!editMode) return;
+                if (confirm('Exit edit mode? Changes will be saved.')) {
+                    editMode = false;
+                    saveToSheets();
+                    updateEditUI();
+                    setStatus('Exited edit mode', 'info');
+                }
+            }
+
+            // ----- ADD NEW ENTRY -----
+            function addEntry() {
+                const office = newOffice.value.trim();
+                const local = newLocal.value.trim();
+                if (office === '' || local === '') {
+                    alert('Please enter both office name and number.');
+                    return;
+                }
+                phonebook.push({ office: office, local: local });
+                newOffice.value = '';
+                newLocal.value = '';
+                render();
+                setStatus('Added "' + office + '"', 'success');
+            }
+
+            // ----- EVENT BINDING -----
+            modifyBtn.addEventListener('click', enterEditMode);
+            exitEditBtn.addEventListener('click', exitEditMode);
+            addBtn.addEventListener('click', addEntry);
+            saveBtn.addEventListener('click', saveToSheets);
+            syncBtn.addEventListener('click', loadFromSheets);
+
+            searchInput.addEventListener('input', render);
+            clearSearchBtn.addEventListener('click', function() {
+                searchInput.value = '';
+                render();
+            });
+
+            newOffice.addEventListener('keydown', function(e) { if (e.key === 'Enter') addEntry(); });
+            newLocal.addEventListener('keydown', function(e) { if (e.key === 'Enter') addEntry(); });
+
+            // ----- START -----
+            loadFromSheets();
+
+            // Expose for debugging
+            window.__phonebook = phonebook;
+            window.__load = loadFromSheets;
+            window.__save = saveToSheets;
+
+        })();
+    </script>
+</body>
+</html>
