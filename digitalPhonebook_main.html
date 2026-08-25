@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+    <title>Phonebook · Google Sheets</title>
+    <link rel="stylesheet" href="digitalPhonebook_style.css">
+</head>
+<body>
+    <div class="phonebook" id="app">
+        <!-- Full-width header image -->
+        <div class="app-header">
+            <div class="title-area">
+                <!-- REPLACE THE SRC WITH YOUR IMAGE URL -->
+                <img src="Assets/OVPAA_HEADER.jpg" alt="Phonebook Logo" />
+                <!-- Example with a real image: 
+                <img src="https://your-image-url.com/logo.png" alt="Phonebook Logo" /> 
+                -->
+            </div>
+        </div>
+
+        <div class="search-area">
+            <input type="text" id="searchInput" placeholder="Search office or local..." />
+            <button class="btn" id="clearSearchBtn">Clear</button>
+        </div>
+
+        <div class="entries-container" id="entriesContainer">
+            <div class="empty-msg">Loading phonebook...</div>
+        </div>
+
+        <div class="status-bar">
+            <span class="status-text" id="statusText">Connecting...</span>
+            <span id="entryCount">0 entries loaded</span>
+        </div>
+    </div>
+
+    <script src="digitalPhonebook_script.js"></script>
+</body>
+</html>
